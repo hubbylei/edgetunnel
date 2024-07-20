@@ -54,6 +54,7 @@ export default {
 			const UA = request.headers.get('User-Agent') || 'null';
 			const userAgent = UA.toLowerCase();
 			userID = (env.UUID || userID).toLowerCase();
+			FileName = env.FileName || FileName
 
 			const currentDate = new Date();
 			currentDate.setHours(0, 0, 0, 0); 

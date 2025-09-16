@@ -51,7 +51,7 @@ jobs:
           if git diff --cached --quiet; then
             echo "没有文件更改，跳过提交"
           else
-            git commit -m "混淆 _worker.js 文件 $(date +"%Y-%m-%d %H:%M:%S")"
+            git commit -m "Make _worker.js 文件 $(date +"%Y-%m-%d %H:%M:%S")"
           fi
 
       - name: 推送更改
@@ -59,3 +59,4 @@ jobs:
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           branch: ${{ github.ref }}
+

@@ -36,16 +36,25 @@ jobs:
       id: cacheHash
       uses: actions/cache@v4
       with:
-        path: .commitHash
+        path: ./commitHash
         key: HEAD-${{ steps.getHash.outputs.commitHash }}
+        restore-keys: HEAD-
 
     - name: Save New Commit Hash
-      if: steps.cacheHash.outputs.cache-hit != 'true'
+      id: save
       run: |
-        echo ${{ steps.getHash.outputs.commitHash }} | tee .commitHash
+        if [ -f ./commitHash ];then
+          cachehash=$(cat ./commitHash)
+        fi
+        if [ "${cachehash}" == "${{ steps.getHash.outputs.commitHash }}" ];then
+          echo "build=false" >> "$GITHUB_OUTPUT"
+        else
+          echo "build=true" >> "$GITHUB_OUTPUT"
+          echo ${{ steps.getHash.outputs.commitHash }} | tee ./commitHash
+        fi
 
     - name: Trigger build
-      if: steps.cacheHash.outputs.cache-hit != 'true'
+      if: steps.save.outputs.build == 'true'
       uses: peter-evans/repository-dispatch@v3
       with:
         token: ${{ secrets.PAT }}

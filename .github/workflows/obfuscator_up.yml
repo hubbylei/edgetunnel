@@ -11,21 +11,22 @@ jobs:
       contents: write
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@main
         with:
-          fetch-depth: 0
+          fetch-depth: 1
 
       - name: 使用 Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@main
         with:
-          node-version: "18"
+          node-version: "latest"
 
       - name: 安装依赖
         run: npm install javascript-obfuscator
 
       - name: 加载源码
         run: |
-          curl -so 明文源码 https://raw.githubusercontent.com/cmliu/edgetunnel/main/_worker.js
+          curl -ksL -o ${GITHUB_WORKSPACE}/明文源码 https://raw.githubusercontent.com/cmliu/edgetunnel/main/_worker.js
+          ls ${GITHUB_WORKSPACE}
 
       - name: 混淆代码
         run: |
@@ -100,3 +101,4 @@ jobs:
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           branch: ${{ github.ref }}
+

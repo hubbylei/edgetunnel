@@ -25,7 +25,7 @@ jobs:
 
       - name: 加载源码
         run: |
-          curl -ksL -o ${GITHUB_WORKSPACE}/明文源码 https://raw.githubusercontent.com/cmliu/edgetunnel/main/_worker.js
+          curl -ksL -o ${GITHUB_WORKSPACE}/明文源吗 https://raw.githubusercontent.com/cmliu/edgetunnel/main/_worker.js
           ls ${GITHUB_WORKSPACE}
 
       - name: 混淆代码

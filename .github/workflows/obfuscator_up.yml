@@ -4,6 +4,9 @@ on:
         types: [obfuscator]
     workflow_dispatch:
 
+env:
+  TZ: Asia/Shanghai
+
 jobs:
   obfuscate:
     runs-on: ubuntu-latest
@@ -14,6 +17,9 @@ jobs:
       - uses: actions/checkout@main
         with:
           fetch-depth: 1
+
+      - name: Initialization environment
+        run: sudo timedatectl set-timezone "$TZ"
 
       - name: 使用 Node.js
         uses: actions/setup-node@main

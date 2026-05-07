@@ -39,7 +39,7 @@ jobs:
     - name: Get Cache Commit Hash
       id: cacheHash
       run: |
-        cacheHash=$(curl -skL https://api.github.com/repos/hubbylei/edgetunnel/releases/latest | jq -r .tag_name)
+        cacheHash=$(curl -skL https://api.github.com/repos/hubbylei/edgetunnel/releases/latest | jq -r .body)
         echo "commitHash=${cacheHash}" >> "$GITHUB_OUTPUT"
 
     - name: Compare Commit Hash
@@ -66,9 +66,8 @@ jobs:
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
-        tag_name: ${{ steps.getHash.outputs.commitHash }}
+        tag_name: LatestHash
         body_path: release.txt
-        files: release.txt
 
     - name: Delete workflow runs
       uses: Mattraks/delete-workflow-runs@main

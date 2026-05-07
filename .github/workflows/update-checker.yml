@@ -55,7 +55,7 @@ jobs:
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
-        tag_name: LatestHash
+        tag_name: $(date +"%Y%m%d%H%M%S")
         body_path: release.txt
 
     - name: Delete workflow runs

@@ -76,7 +76,6 @@ jobs:
         keep_minimum_runs: 1
 
     - name: Remove old Releases
-      if: steps.build.outputs.status == 'success' && !cancelled()
       uses: dev-drprasad/delete-older-releases@master
       with:
         keep_latest: 1

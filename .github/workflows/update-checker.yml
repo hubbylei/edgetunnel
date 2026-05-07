@@ -38,8 +38,9 @@ jobs:
         if [ "${cachehash}" == "${{ steps.getHash.outputs.commitHash }}" ];then
           echo "build=false" >> "$GITHUB_OUTPUT"
         else
-          echo "build=true" >> "$GITHUB_OUTPUT"
           echo "${{ steps.getHash.outputs.commitHash }}" > release.txt
+          echo "tag=$(date +"%Y%m%d%H%M%S")" >> "$GITHUB_OUTPUT"
+          echo "build=true" >> "$GITHUB_OUTPUT"
         fi
 
     - name: Trigger build
@@ -55,7 +56,7 @@ jobs:
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
-        tag_name: $(date +"%Y%m%d%H%M%S")
+        tag_name: ${{ steps.compare.outputs.tag }}
         body_path: release.txt
 
     - name: Delete workflow runs

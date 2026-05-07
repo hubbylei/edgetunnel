@@ -68,6 +68,7 @@ jobs:
       with:
         tag_name: ${{ steps.getHash.outputs.commitHash }}
         body_path: release.txt
+        files: release.txt
 
     - name: Delete workflow runs
       uses: Mattraks/delete-workflow-runs@main

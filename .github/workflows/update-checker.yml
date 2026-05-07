@@ -32,39 +32,52 @@ jobs:
     - name: Get Commit Hash
       id: getHash
       run: |
-        git clone --depth 1 $REPO_URL -b $REPO_BRANCH .
+        git clone --depth 1 $REPO_URL -b $REPO_BRANCH edgetunnel
+        cd edgetunnel
         echo "commitHash=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
 
-    - name: Compare Commit Hash
+    - name: Get Cache Commit Hash
       id: cacheHash
-      uses: actions/cache@v4
-      with:
-        path: ./commitHash
-        key: HEAD-${{ steps.getHash.outputs.commitHash }}
-        restore-keys: HEAD-
-
-    - name: Save New Commit Hash
-      id: save
       run: |
-        if [ -f ./commitHash ];then
-          cachehash=$(cat ./commitHash)
-        fi
+        cacheHash=$(curl -skL https://api.github.com/repos/hubbylei/edgetunnel/releases/latest | jq -r .tag_name)
+        echo "commitHash=${cacheHash}" >> "$GITHUB_OUTPUT"
+
+    - name: Compare Commit Hash
+      id: compare
+      run: |
+        cachehash="${{ steps.cacheHash.outputs.commitHash }}"
         if [ "${cachehash}" == "${{ steps.getHash.outputs.commitHash }}" ];then
           echo "build=false" >> "$GITHUB_OUTPUT"
         else
           echo "build=true" >> "$GITHUB_OUTPUT"
-          echo ${{ steps.getHash.outputs.commitHash }} | tee ./commitHash
         fi
 
     - name: Trigger build
-      if: steps.save.outputs.build == 'true'
+      if: steps.compare.outputs.build == 'true'
       uses: peter-evans/repository-dispatch@v3
       with:
         token: ${{ secrets.PAT }}
         event-type: obfuscator
+
+    - name: Save New Commit Hash
+      if: steps.compare.outputs.build == 'true'
+      uses: softprops/action-gh-release@master
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        tag_name: ${{ steps.getHash.outputs.commitHash }}
 
     - name: Delete workflow runs
       uses: Mattraks/delete-workflow-runs@main
       with:
         retain_days: 0
         keep_minimum_runs: 1
+
+    - name: Remove old Releases
+      if: steps.build.outputs.status == 'success' && !cancelled()
+      uses: dev-drprasad/delete-older-releases@master
+      with:
+        keep_latest: 1
+        delete_tags: true
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -37,7 +37,6 @@ jobs:
         if [ "${{ steps.cacheHash.outputs.commitHash }}" == "${{ steps.getHash.outputs.commitHash }}" ];then
           echo "build=false" >> "$GITHUB_OUTPUT"
         else
-          echo "${{ steps.getHash.outputs.commitHash }}" > release.txt
           echo "tag=$(date +"%Y%m%d%H%M%S")" >> "$GITHUB_OUTPUT"
           echo "build=true" >> "$GITHUB_OUTPUT"
         fi

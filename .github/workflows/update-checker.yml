@@ -34,8 +34,7 @@ jobs:
     - name: Compare Commit Hash
       id: compare
       run: |
-        cachehash="${{ steps.cacheHash.outputs.commitHash }}"
-        if [ "${cachehash}" == "${{ steps.getHash.outputs.commitHash }}" ];then
+        if [ "${{ steps.cacheHash.outputs.commitHash }}" == "${{ steps.getHash.outputs.commitHash }}" ];then
           echo "build=false" >> "$GITHUB_OUTPUT"
         else
           echo "${{ steps.getHash.outputs.commitHash }}" > release.txt

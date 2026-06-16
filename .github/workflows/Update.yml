@@ -1,3 +1,4 @@
+name: Update
 env:
   REPO_URL: https://github.com/cmliu/edgetunnel
   REPO_BRANCH: main

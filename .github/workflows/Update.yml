@@ -145,7 +145,6 @@ jobs:
         body_path: /tmp/edgetunnel/CHANGELOG
 
     - name: Remove old Releases
-      if: steps.compare.outputs.build == 'true'
       uses: dev-drprasad/delete-older-releases@master
       with:
         keep_latest: 1

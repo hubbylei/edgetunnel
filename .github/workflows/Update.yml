@@ -1,0 +1,159 @@
+env:
+  REPO_URL: https://github.com/cmliu/edgetunnel
+  REPO_BRANCH: main
+  TZ: Asia/Shanghai
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "*/10 * * * *"
+
+jobs:
+  Update:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Initialization environment
+      run: sudo timedatectl set-timezone "$TZ"
+
+    - name: Get Commit Hash
+      id: getHash
+      run: |
+        git clone --depth 1 $REPO_URL -b $REPO_BRANCH /tmp/edgetunnel
+        cd /tmp/edgetunnel
+        echo "commitHash=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+
+    - name: Get Cache Commit Hash
+      id: cacheHash
+      run: |
+        cacheHash=$(curl -skL https://api.github.com/repos/hubbylei/edgetunnel/releases/latest | jq -r .name)
+        echo "commitHash=${cacheHash}" >> "$GITHUB_OUTPUT"
+
+    - name: Compare Commit Hash
+      id: compare
+      run: |
+        if [ "${{ steps.cacheHash.outputs.commitHash }}" == "${{ steps.getHash.outputs.commitHash }}" ];then
+          echo "build=false" >> "$GITHUB_OUTPUT"
+        else
+          echo "tag=$(date +"%Y%m%d%H%M%S")" >> "$GITHUB_OUTPUT"
+          echo "build=true" >> "$GITHUB_OUTPUT"
+        fi
+
+    - uses: actions/checkout@main
+      if: steps.compare.outputs.build == 'true'
+
+    - name: Setup Node.js
+      if: steps.compare.outputs.build == 'true'
+      uses: actions/setup-node@main
+      with:
+        node-version: "latest"
+
+    - name: Install dependencies
+      if: steps.compare.outputs.build == 'true'
+      run: npm install javascript-obfuscator
+
+    - name: Load source code
+      if: steps.compare.outputs.build == 'true'
+      run: cp -rvf /tmp/edgetunnel/_worker.js ${GITHUB_WORKSPACE}/明文源码
+
+    - name: obfuscated code
+      if: steps.compare.outputs.build == 'true'
+      run: |
+        cat > obfuscate.js << 'EOF'
+        const JavaScriptObfuscator = require('javascript-obfuscator');
+        const fs = require('fs');
+        const path = require('path');
+        const sourceFileName = '明文源码';
+        const outputFileName = '_worker.js';
+        const sourceFilePath = path.join(process.cwd(), sourceFileName);
+        if (!fs.existsSync(sourceFilePath)) {
+            console.error('错误：在路径 \'' + sourceFilePath + '\' 未找到源文件。请确保您的仓库根目录有名为 \'明文源码\' 的文件。');
+            process.exit(1);
+        }
+        const originalCode = fs.readFileSync(sourceFilePath, 'utf8');
+        if (!originalCode || originalCode.trim().length === 0) {
+            console.error('错误：源文件 ' + sourceFileName + ' 为空。');
+            process.exit(1);
+        }
+        const obfuscationOptions = {
+          compact: true,
+          controlFlowFlattening: false,
+          controlFlowFlatteningThreshold: 0,
+          deadCodeInjection: false,
+          stringArray: true,
+          stringArrayEncoding: ['base64'],
+          stringArrayThreshold: 1.0,
+          stringArrayRotate: true,
+          stringArrayShuffle: true,
+          stringArrayWrappersCount: 2,
+          stringArrayWrappersChainedCalls: false,
+          stringArrayWrappersParametersMaxCount: 3,
+          renameGlobals: true,
+          identifierNamesGenerator: 'mangled-shuffled',
+          identifierNamesCache: null,
+          identifiersPrefix: '',
+          renameProperties: false,
+          renamePropertiesMode: 'safe',
+          ignoreImports: false,
+          target: 'browser',
+          numbersToExpressions: false,
+          simplify: false,
+          splitStrings: true,
+          splitStringsChunkLength: 1,
+          transformObjectKeys: false,
+          unicodeEscapeSequence: true,
+          selfDefending: false,
+          debugProtection: false,
+          debugProtectionInterval: 0,
+          disableConsoleOutput: true,
+          domainLock: []
+        };
+        const obfuscatedCode = JavaScriptObfuscator.obfuscate(originalCode, obfuscationOptions).getObfuscatedCode();
+        fs.writeFileSync(path.join(process.cwd(), outputFileName), obfuscatedCode, 'utf8');
+        console.log('成功将 \'' + sourceFileName + '\' 混淆并保存至 \'' + outputFileName + '\'。');
+        EOF
+        node obfuscate.js
+
+    - name: Submit changes
+      if: steps.compare.outputs.build == 'true'
+      run: |
+        git config --local user.email "github-actions[bot]@users.noreply.github.com"
+        git config --local user.name "github-actions[bot]"
+        git add _worker.js
+        if git diff --cached --quiet; then
+            echo "没有文件更改，跳过提交"
+        else
+            git commit -m "Update _worker.js $(date +"%Y-%m-%d %H:%M:%S")"
+        fi
+
+    - name: Push changes
+      if: steps.compare.outputs.build == 'true'
+      uses: ad-m/github-push-action@master
+      with:
+        github_token: ${{ secrets.GITHUB_TOKEN }}
+        branch: ${{ github.ref }}
+
+    - name: Save New Commit Hash
+      if: steps.compare.outputs.build == 'true'
+      uses: softprops/action-gh-release@master
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        tag_name: ${{ steps.compare.outputs.tag }}
+        name: ${{ steps.getHash.outputs.commitHash }}
+        body_path: /tmp/edgetunnel/CHANGELOG
+
+    - name: Delete workflow runs
+      uses: Mattraks/delete-workflow-runs@main
+      with:
+        retain_days: 0
+        keep_minimum_runs: 1
+
+    - name: Remove old Releases
+      if: steps.compare.outputs.build == 'true'
+      uses: dev-drprasad/delete-older-releases@master
+      with:
+        keep_latest: 1
+        delete_tags: true
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

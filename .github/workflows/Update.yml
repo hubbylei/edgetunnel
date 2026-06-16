@@ -144,12 +144,6 @@ jobs:
         name: ${{ steps.getHash.outputs.commitHash }}
         body_path: /tmp/edgetunnel/CHANGELOG
 
-    - name: Delete workflow runs
-      uses: Mattraks/delete-workflow-runs@main
-      with:
-        retain_days: 0
-        keep_minimum_runs: 1
-
     - name: Remove old Releases
       if: steps.compare.outputs.build == 'true'
       uses: dev-drprasad/delete-older-releases@master
@@ -158,3 +152,9 @@ jobs:
         delete_tags: true
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Delete workflow runs
+      uses: Mattraks/delete-workflow-runs@main
+      with:
+        retain_days: 0
+        keep_minimum_runs: 1
